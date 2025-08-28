@@ -122,6 +122,11 @@ table(ap$group3)
 # Acinar Acinar_i    Other 
 # 35405    43923    33235 
 
+table(ap$Cluster)
+# Macrophage   Acinar-REG+  MUC5B+ Ductal    Acinar-i     Acinar-s      Ductal      Alpha       Beta      Gamma   Delta   Quiescent Stellate  Activated Stellate    Endothelial        Schwann
+# 833          3689         225              43923        31716         20610       1607        4246      90      1022    178                 2225                  2119               80 
+
+
 # 2) Pairwise comparisons (Acinar vs Other, Acinar_i vs Other, Acinar vs Acinar_i)
 pairwise_results <- list()
 pairs <- list(c("Acinar","Other"), c("Acinar_i","Other"), c("Acinar","Acinar_i"))
@@ -174,7 +179,7 @@ gene_stats <- lapply(genes, function(g){
 
 gene_stats_df <- do.call(rbind, gene_stats)
 gene_stats_df
-# gene mean_acinar mean_acinar_i mean_other frac_acinar frac_acinar_i frac_other auroc_acinar_vs_acinar_i
+#      gene mean_acinar mean_acinar_i mean_other frac_acinar frac_acinar_i frac_other auroc_acinar_vs_acinar_i
 # 1   PRSS1    5.317807     0.4168819 0.33805610   0.7866968    0.07276370 0.05581465                0.8714799
 # 2   PRSS2    0.000000     0.0000000 0.00000000   0.0000000    0.00000000 0.00000000                0.5000000
 # 3    CPA1    4.520975     0.4885747 0.30261645   0.7877418    0.10131366 0.05861291                0.8631042
@@ -188,18 +193,39 @@ gene_stats_df
 # 11  RBPJL    2.507081     2.6294284 0.27963641   0.7063692    0.63101336 0.08454942                0.5490032
 # 12  FOXP2    1.109007     1.4097583 0.28430998   0.4674199    0.46647542 0.12155860                0.4442974
 
-# 4) Per-cluster post-hoc tests for a chosen score (Kruskal-Wallis + pairwise)
-table(ap$Cluster)
-# Macrophage   Acinar-REG+  MUC5B+ Ductal    Acinar-i     Acinar-s      Ductal      Alpha       Beta      Gamma   Delta   Quiescent Stellate  Activated Stellate    Endothelial        Schwann
-# 833          3689         225              43923        31716         20610       1607        4246      90      1022    178                 2225                  2119               80 
 
-library(rcompanion)
-for(sc in scores){
-  kw <- kruskal.test(as.formula(paste(sc, "~ Cluster")), data=ap@meta.data)
-  cat("K-W for", sc, ", p=", kw$p.value, "\n")
-  pw <- pairwise.wilcox.test(ap@meta.data[[sc]], ap@meta.data$Cluster, p.adjust.method="bonferroni")
-  # extract comparisons of interest (Acinar vs Acinar-i etc.)
-  print(pw)}
+# 4) Per-donor AUROC (acinar vs acinar_i), same score(s)
+per_donor <- do.call(rbind, lapply(unique(ap$patient_ID), function(pid){
+  sub <- ap@meta.data[ap$patient_ID==pid & ap$group3 %in% c("Acinar","Acinar_i"), ]
+  out <- lapply(score_vars, function(v){
+    if(length(unique(sub$group3))<2) return(NULL)
+    lab <- ifelse(sub$group3=="Acinar", 1, 0)
+    roc_obj <- roc(lab, sub[[v]], quiet=TRUE)
+    data.frame(patient_ID=pid, score=v,
+               n_acinar=sum(lab==1), n_acinar_i=sum(lab==0),
+               auroc=as.numeric(auc(roc_obj)),
+               ci_low=ci.auc(roc_obj)[1], ci_high=ci.auc(roc_obj)[3])})
+  do.call(rbind, out)}))
+per_donor
+#    patient_ID                        score n_acinar n_acinar_i     auroc    ci_low   ci_high
+# 1     AFES448         Acinar_Marker_Score1     7591      16444 0.8583470 0.8527424 0.8639516
+# 2     AFES448 Acinar_Journal_Marker_Score1     7591      16444 0.7615071 0.7543412 0.7686729
+# 3     AFES448  Acinar_Markers_Valid_Score1     7591      16444 0.7719646 0.7648209 0.7791083
+# 4     AFES365         Acinar_Marker_Score1     5886       9860 0.9272093 0.9221969 0.9322217
+# 5     AFES365 Acinar_Journal_Marker_Score1     5886       9860 0.9110560 0.9057744 0.9163376
+# 6     AFES365  Acinar_Markers_Valid_Score1     5886       9860 0.9054147 0.8998546 0.9109748
+# 7     AGBR024         Acinar_Marker_Score1    13918       8820 0.9620582 0.9596781 0.9644384
+# 8     AGBR024 Acinar_Journal_Marker_Score1    13918       8820 0.9361508 0.9326574 0.9396441
+# 9     AGBR024  Acinar_Markers_Valid_Score1    13918       8820 0.9277068 0.9239652 0.9314484
+# 10     TUM_13         Acinar_Marker_Score1     1011       2484 0.9495621 0.9391317 0.9599924
+# 11     TUM_13 Acinar_Journal_Marker_Score1     1011       2484 0.9227392 0.9101076 0.9353707
+# 12     TUM_13  Acinar_Markers_Valid_Score1     1011       2484 0.9122650 0.8987135 0.9258165
+# 13     TUM_25         Acinar_Marker_Score1     3654       2810 0.9522376 0.9473152 0.9571600
+# 14     TUM_25 Acinar_Journal_Marker_Score1     3654       2810 0.9241673 0.9170583 0.9312763
+# 15     TUM_25  Acinar_Markers_Valid_Score1     3654       2810 0.9163193 0.9087660 0.9238725
+# 16     TUM_C1         Acinar_Marker_Score1     3345       3505 0.9075340 0.9008364 0.9142316
+# 17     TUM_C1 Acinar_Journal_Marker_Score1     3345       3505 0.8323116 0.8225446 0.8420785
+# 18     TUM_C1  Acinar_Markers_Valid_Score1     3345       3505 0.8230768 0.8128917 0.8332619
 
 # 5) Per-donor Wilcoxon (get p-values per donor) and p.adjust across donors
 per_donor_stats <- do.call(rbind, lapply(unique(ap$patient_ID), function(pid){
@@ -305,4 +331,3 @@ sessionInfo()
 # [22] SeuratData_0.2.2.9001        patchwork_1.3.1              Seurat_5.0.0                
 # [25] SeuratObject_5.1.0           sp_2.2-0                     dplyr_1.1.4                 
 # [28] Matrix_1.7-3                
-
