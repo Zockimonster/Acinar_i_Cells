@@ -1,15 +1,5 @@
 
 # check acinar_i cells using the unmodified dataset
-# Load required libraries 
-required_packages <- c('Matrix', 'dplyr', 'Seurat', 'patchwork', 'SeuratData', 'ggplot2', 'SeuratDisk', 'viridis')
-invisible(lapply(required_packages, library, character.only = T))
-
-# obtain directories
-# ref_dir with a folder EGAS00001004653, where the adult_pancreas.gz file can loaded
-egas_nr <- "EGAS00001004653"
-egas_dir <- paste0(ref_dir,egas_nr, "/")
-
-##############################################################
 
 #######################
 ### EGAS00001004653 ###
@@ -18,7 +8,17 @@ egas_dir <- paste0(ref_dir,egas_nr, "/")
 # https://www.sciencedirect.com/science/article/pii/S0016508520353993
 # data from
 # https://explore.data.humancellatlas.org/projects/b3938158-4e8d-4fdb-9e13-9e94270dde16/project-matrices
-# cp: 2/13/25 & ap: 4/6/25 (re-loaded)
+
+##############################################################
+
+# Load required libraries 
+required_packages <- c('Matrix', 'dplyr', 'Seurat', 'patchwork', 'SeuratData', 'ggplot2', 'SeuratDisk', 'viridis')
+invisible(lapply(required_packages, library, character.only = T))
+
+# obtain directories
+# ref_dir with a folder EGAS00001004653, where the adult_pancreas.gz file can loaded
+egas_nr <- "EGAS00001004653"
+egas_dir <- paste0(ref_dir,egas_nr, "/")
 
 ##################
 # Adult Pancreas #
@@ -274,3 +274,35 @@ top10 %>% filter(cluster=="Acinar-REG+")
 # 8     0       2.05 0.17  0.04          0 Acinar-REG+ RPS19 
 # 9     0       2.02 0.273 0.07          0 Acinar-REG+ EEF1A1
 # 10    0       2.01 0.195 0.049         0 Acinar-REG+ RPL13A
+
+sessionInfo()
+# R version 4.4.3 (2025-02-28)
+# Platform: x86_64-conda-linux-gnu
+# Running under: Ubuntu 24.04.1 LTS
+# 
+# Matrix products: default
+# BLAS/LAPACK: /data/cephfs-1/work/groups/krieger/users/spiese_c/miniconda/envs/pdac/lib/libopenblasp-r0.3.29.so;  LAPACK version 3.12.0
+# 
+# locale:
+#   [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C               LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+# [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8    LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+# [9] LC_ADDRESS=C               LC_TELEPHONE=C             LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+# 
+# time zone: Etc/UTC
+# tzcode source: system (glibc)
+# 
+# attached base packages:
+#   [1] grid      stats     graphics  grDevices utils     datasets  methods   base     
+# 
+# other attached packages:
+#   [1] rcompanion_2.5.0             Azimuth_0.5.0                shinyBS_0.61.1              
+# [4] rstatix_0.7.2                pROC_1.18.5                  viridis_0.6.5               
+# [7] viridisLite_0.4.2            harmony_1.2.3                Rcpp_1.0.14                 
+# [10] future_1.58.0                scIntegrationMetrics_1.2.0   ComplexHeatmap_2.22.0       
+# [13] RColorBrewer_1.1-3           readr_2.1.5                  msigdbr_24.1.0              
+# [16] readxl_1.4.5                 SeuratDisk_0.0.0.9021        ggplot2_3.5.2               
+# [19] pbmcsca.SeuratData_3.0.0     pancreasref.SeuratData_1.0.0 panc8.SeuratData_3.0.2      
+# [22] SeuratData_0.2.2.9001        patchwork_1.3.1              Seurat_5.0.0                
+# [25] SeuratObject_5.1.0           sp_2.2-0                     dplyr_1.1.4                 
+# [28] Matrix_1.7-3                
+
