@@ -1,4 +1,5 @@
 
+
 # check acinar_i cells using the unmodified dataset
 
 #######################
@@ -51,7 +52,7 @@ acinar_journal_markers <- c("PRSS1","CPA1","CPA2", "RBPJL", "FOXP2")
 acinar_markers_valid <- c("PRSS1","CPA1", "RBPJL")
 ap <- AddModuleScore(ap, features = list(acinar_markers), name = "Acinar_Marker_Score")
 ap <- AddModuleScore(ap, features = list(acinar_journal_markers), name = "Acinar_Journal_Marker_Score")
-ap <- AddModuleScore(ap, features = list(acinar_markers_valid), name = "Acinar_Markers_Valid_Score")
+ap <- AddModuleScore(ap, features = list(acinar_markers_valid), name = "Acinar_Markers_Journal_Valid")
 
 ############################################################################################################################################################
 
@@ -63,22 +64,21 @@ p3 <- FeaturePlot(ap, features = "Acinar_Marker_Score1")&
   scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred"))
 p4 <- FeaturePlot(ap, features = c("Acinar_Journal_Marker_Score1"))&
   scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred"))
-p5 <- FeaturePlot(ap, features = c("Acinar_Markers_Valid_Score1"))&
+p5 <- FeaturePlot(ap, features = c("Acinar_Markers_Journal_Valid1"))&
   scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred"))
-p_patched<-  wrap_plots(p1, p2, p3,p4,p5, ncol=5) + plot_annotation(title= paste0("Cell UMAP & Acinar Markers in all adult pancreas samples")) & theme(plot.title = element_text(size = 14, face = "bold"))
-ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_umap.png"), plot = p_patched, width = 70, height =15, units = "cm")
+p_patched<-  wrap_plots(p1, p2, p3,p5, ncol=4) + plot_annotation(title= paste0("Cell UMAP & Acinar Markers in all adult pancreas samples")) & theme(plot.title = element_text(size = 14, face = "bold"))
+ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_umap.png"), plot = p_patched, width = 50, height =15, units = "cm")
 
 
 # create dotplots for all samples combined
 ap$acinar_status <- as.character(ap$Cluster)
 ap$acinar_status[!grepl("Acinar", ap$Cluster)] <- "Other"
 
-p1 <- DotPlot(ap, features = acinar_markers, group.by = "acinar_status") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-p2 <- DotPlot(ap, features = acinar_journal_markers, group.by = "acinar_status") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-p_patched<-  wrap_plots(p1, p2,ncol=1, guides="collect") + plot_annotation(title= paste0("Acinar Markers in all adult pancreas samples"), tag_levels=list(c("Acinar Markers", "Acinar Journal Markers"))) & theme(plot.title = element_text(size = 14, face = "bold"))
-ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_dotplot.png"), plot = p_patched, width = 25, height =25, units = "cm")
+x_label <- unique(c(acinar_markers, acinar_journal_markers))
+
+p1 <- DotPlot(ap, features = unique(c(acinar_markers, acinar_journal_markers)),cols = c("gray", "blue"), group.by = "acinar_status") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ggtitle("Acinar Markers in all adult pancreas samples")
+ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_dotplot.png"), plot = p1, width = 25, height =15, units = "cm")
 
 ############################################################################################################################################################
 
@@ -90,7 +90,7 @@ p3 <- FeaturePlot(ap, features = "Acinar_Marker_Score1", split.by="patient_ID")&
   scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred"))
 p4 <- FeaturePlot(ap, features = c("Acinar_Journal_Marker_Score1"), split.by="patient_ID")&
   scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred"))
-p5 <- FeaturePlot(ap, features = c("Acinar_Markers_Valid_Score1"), split.by="patient_ID")&
+p5 <- FeaturePlot(ap, features = c("Acinar_Markers_Journal_Valid"), split.by="patient_ID")&
   scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred"))
 p_patched<-  wrap_plots(p1, p2, p3,p4,p5,nrow=5) + plot_annotation(title= paste0("Cell UMAP & Acinar Markers in each adult pancreas sample")) & theme(plot.title = element_text(size = 14, face = "bold"))
 ggsave(paste0(egas_dir, "plots/each_AP_acinar_cells_umap.png"), plot = p_patched, width = 80, height =55, units = "cm")
@@ -104,6 +104,12 @@ p2 <- DotPlot(ap,  split.by="patient_ID", features = acinar_journal_markers, gro
 p_patched<-  wrap_plots(p1, p2,nrow=2, guides="collect") + plot_annotation(title= paste0("Acinar Markers in each adult pancreas sample"), tag_levels=list(c("Acinar Markers", "Acinar Journal Markers"))) & theme(plot.title = element_text(size = 14, face = "bold"))
 ggsave(paste0(egas_dir, "plots/each_AP_acinar_cells_dotplot.png"), plot = p_patched, width = 25, height =55, units = "cm")
 
+
+p1 <- DotPlot(ap, split.by="patient_ID", features = unique(c(acinar_markers, acinar_journal_markers)),cols=viridis(6), group.by = "acinar_status") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ggtitle("Acinar Markers across adult pancreas samples")
+ggsave(paste0(egas_dir, "plots/each_AP_acinar_cells_dotplot.png"), plot = p1, width = 25, height =35, units = "cm")
+
+
 ############################################################################################################################################################
 
 # calculate statistics (with help of chatGPT)
@@ -115,7 +121,7 @@ ap$group3 <- "Other"
 ap$group3[grepl("^Acinar", ap$Cluster)] <- "Acinar"
 ap$group3[ap$Cluster == "Acinar-i"] <- "Acinar_i"
 
-scores <- c("Acinar_Marker_Score1","Acinar_Journal_Marker_Score1","Acinar_Markers_Valid_Score1")
+scores <- c("Acinar_Marker_Score1","Acinar_Journal_Marker_Score1","Acinar_Markers_Journal_Valid1")
 
 # 1) Group sizes
 table(ap$group3) 
@@ -193,11 +199,27 @@ gene_stats_df
 # 11  RBPJL    2.507081     2.6294284 0.27963641   0.7063692    0.63101336 0.08454942                0.5490032
 # 12  FOXP2    1.109007     1.4097583 0.28430998   0.4674199    0.46647542 0.12155860                0.4442974
 
+gene_stats <- gene_stats_df[match(x_label, gene_stats_df$gene), c("gene", "auroc_acinar_vs_acinar_i")]
+gene_stats
+#      gene auroc_acinar_vs_acinar_i
+# 1   PRSS1                0.8714799
+# 2   PRSS2                0.5000000
+# 3    CPA1                0.8631042
+# 5    CTRC                0.8368560
+# 6  CELA3A                0.8607216
+# 7  CELA2A                0.5225650
+# 8   PNLIP                0.7396286
+# 9   AMY2A                0.7772695
+# 10  AMY2B                0.6990215
+# 4    CPA2                0.7880131
+# 11  RBPJL                0.5490032
+# 12  FOXP2                0.4442974
+
 
 # 4) Per-donor AUROC (acinar vs acinar_i), same score(s)
 per_donor <- do.call(rbind, lapply(unique(ap$patient_ID), function(pid){
   sub <- ap@meta.data[ap$patient_ID==pid & ap$group3 %in% c("Acinar","Acinar_i"), ]
-  out <- lapply(score_vars, function(v){
+  out <- lapply(scores, function(v){
     if(length(unique(sub$group3))<2) return(NULL)
     lab <- ifelse(sub$group3=="Acinar", 1, 0)
     roc_obj <- roc(lab, sub[[v]], quiet=TRUE)
@@ -237,7 +259,7 @@ per_donor_stats <- do.call(rbind, lapply(unique(ap$patient_ID), function(pid){
   data.frame(patient_ID=pid, p_raw=p, n_acinar=length(a), n_acinar_i=length(i))}))
 per_donor_stats$p_adj <- p.adjust(per_donor_stats$p_raw, method="bonferroni")
 per_donor_stats
-# patient_ID p_raw n_acinar n_acinar_i p_adj
+#   patient_ID p_raw n_acinar n_acinar_i p_adj
 # 1    AFES448     0     7591      16444     0
 # 2    AFES365     0     5886       9860     0
 # 3    AGBR024     0    13918       8820     0
