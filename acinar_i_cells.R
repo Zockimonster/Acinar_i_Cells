@@ -1,5 +1,3 @@
-
-
 # check acinar_i cells using the unmodified dataset
 
 #######################
@@ -54,37 +52,36 @@ ap <- AddModuleScore(ap, features = list(acinar_markers), name = "Acinar_Marker_
 ap <- AddModuleScore(ap, features = list(acinar_journal_markers), name = "Acinar_Journal_Marker_Score")
 ap <- AddModuleScore(ap, features = list(acinar_markers_valid), name = "Acinar_Markers_Journal_Valid")
 
-############################################################################################################################################################
-
-# create dimplots for all samples combined
-p1 <- DimPlot(ap, group.by="Cluster", label=T,label.size=2, repel=T)+ NoLegend()
 ap[["Acinar_i"]] <- ap@meta.data$Cluster == "Acinar-i"
-p2 <- DimPlot(ap, group.by="Acinar_i", label=T,label.size=2, repel=T, cols= c("gray", "red"))+ NoLegend()
-p3 <- FeaturePlot(ap, features = "Acinar_Marker_Score1")&
-  scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred"))
-p4 <- FeaturePlot(ap, features = c("Acinar_Journal_Marker_Score1"))&
-  scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred"))
-p5 <- FeaturePlot(ap, features = c("Acinar_Markers_Journal_Valid1"))&
-  scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred"))
-p_patched<-  wrap_plots(p1, p2, p3,p5, ncol=4) + plot_annotation(title= paste0("Cell UMAP & Acinar Markers in all adult pancreas samples")) & theme(plot.title = element_text(size = 14, face = "bold"))
-ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_umap.png"), plot = p_patched, width = 50, height =15, units = "cm")
-
-
-# create dotplots for all samples combined
 ap$acinar_status <- as.character(ap$Cluster)
 ap$acinar_status[!grepl("Acinar", ap$Cluster)] <- "Other"
 
 x_label <- unique(c(acinar_markers, acinar_journal_markers))
 
+############################################################################################################################################################
+
+# create dimplots for all samples combined
+p1 <- DimPlot(ap, group.by="Cluster", label=T,label.size=2, repel=T)+ NoLegend()
+p2 <- DimPlot(ap, group.by="Acinar_i", label=T,label.size=2, repel=T, cols= c("gray", "red"))+ NoLegend()
+p3 <- FeaturePlot(ap, features = "Acinar_Marker_Score1")+ ggtitle("MarkerScore") + NoLegend() &
+  scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred")) 
+p4 <- FeaturePlot(ap, features = c("Acinar_Journal_Marker_Score1"))+ ggtitle("JournalScore") + NoLegend() &
+  scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred")) 
+p5 <- FeaturePlot(ap, features = c("Acinar_Markers_Journal_Valid1")) + ggtitle("ValidScore")&
+  scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred"))
+p_patched<-  wrap_plots(p1, p2, p3, p4, p5, ncol=5, guides="collect") + plot_annotation(title= paste0("UMAP colored by Cell Type and Acinar Marker Expression in all adult pancreas samples")) & theme(plot.title = element_text(size = 14, face = "bold"))
+ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_umap.png"), plot = p_patched, width = 50, height =12, units = "cm")
+
+
+# create dotplots for all samples combined
 p1 <- DotPlot(ap, features = unique(c(acinar_markers, acinar_journal_markers)),cols = c("gray", "blue"), group.by = "acinar_status") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ggtitle("Acinar Markers in all adult pancreas samples")
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ggtitle("Acinar Markers across all adult pancreas samples") + WhiteBackground()
 ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_dotplot.png"), plot = p1, width = 25, height =15, units = "cm")
 
 ############################################################################################################################################################
 
 # create dimplots for each sample separately
 p1 <- DimPlot(ap, group.by="Cluster", split.by="patient_ID", label=T,label.size=2, repel=T)+ NoLegend()
-ap[["Acinar_i"]] <- ap@meta.data$Cluster == "Acinar-i"
 p2 <- DimPlot(ap, group.by="Acinar_i", split.by="patient_ID",label=T,label.size=2, repel=T, cols= c("gray", "red"))+ NoLegend()
 p3 <- FeaturePlot(ap, features = "Acinar_Marker_Score1", split.by="patient_ID")&
   scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred"))
@@ -121,9 +118,13 @@ ap$group3 <- "Other"
 ap$group3[grepl("^Acinar", ap$Cluster)] <- "Acinar"
 ap$group3[ap$Cluster == "Acinar-i"] <- "Acinar_i"
 
+# Pairwise comparisons (Acinar vs Other, Acinar_i vs Other, Acinar vs Acinar_i) for
+# marker sets
+# each gene in marker sets
 scores <- c("Acinar_Marker_Score1","Acinar_Journal_Marker_Score1","Acinar_Markers_Journal_Valid1")
+genes <- c("PRSS1","PRSS2","CPA1","CPA2","CTRC","CELA3A","CELA2A","PNLIP","AMY2A","AMY2B","RBPJL","FOXP2")
 
-# 1) Group sizes
+# Group sizes
 table(ap$group3) 
 # Acinar Acinar_i    Other 
 # 35405    43923    33235 
@@ -132,140 +133,292 @@ table(ap$Cluster)
 # Macrophage   Acinar-REG+  MUC5B+ Ductal    Acinar-i     Acinar-s      Ductal      Alpha       Beta      Gamma   Delta   Quiescent Stellate  Activated Stellate    Endothelial        Schwann
 # 833          3689         225              43923        31716         20610       1607        4246      90      1022    178                 2225                  2119               80 
 
-
-# 2) Pairwise comparisons (Acinar vs Other, Acinar_i vs Other, Acinar vs Acinar_i)
+# 1) Cell Level: “If I treat every cell as an independent datapoint, how well can marker X separate these groups?”
 pairwise_results <- list()
 pairs <- list(c("Acinar","Other"), c("Acinar_i","Other"), c("Acinar","Acinar_i"))
-for(sc in scores){
+expr <- GetAssayData(ap, slot="data") 
+for(g in c(scores, genes)){
   for(pp in pairs){
-    a <- ap@meta.data[ap$group3==pp[1], sc]
-    b <- ap@meta.data[ap$group3==pp[2], sc]
+    if (g %in% scores){
+        a <- ap@meta.data[ap$group3==pp[1], g]
+        b <- ap@meta.data[ap$group3==pp[2], g]
+    }else if (g %in% genes){
+      if(!g %in% rownames(expr)) return(NULL)
+      a <- ap@meta.data$group3==pp[1]
+      b <- ap@meta.data$group3==pp[2]
+      a <- expr[g,a]
+      b <- expr[g,b]}
     wt <- wilcox.test(a, b, alternative="two.sided")
     # effect sizes
     cohend <- (mean(a)-mean(b))/sqrt(((length(a)-1)*sd(a)^2 + (length(b)-1)*sd(b)^2)/(length(a)+length(b)-2))
     cliffs <- function(x,y){ (sum(outer(x,y,">")) - sum(outer(x,y,"<"))) / (length(x)*length(y)) }
     cdelta <- cliffs(a,b)
     r_auc <- roc(c(rep(1,length(a)), rep(0,length(b))), c(a,b), quiet=TRUE)
-    pairwise_results[[paste(sc, pp[1], "vs", pp[2])]] <- data.frame(score=sc,
+    pairwise_results[[paste0(g,"_", pp[1], "_vs_", pp[2])]] <- data.frame(score=g,
+                                                                    comparison_groups=paste0(pp[1], "_vs_", pp[2]),
+                                                                    type=ifelse(g %in% scores, "Marker_set", "Gene"),
                                                                     group1=pp[1], group2=pp[2],
                                                                     n1=length(a), n2=length(b),
                                                                     mean1=mean(a), sd1=sd(a), mean2=mean(b), sd2=sd(b),
+                                                                    frac1=mean(a>0), frac2=mean(b>0),
                                                                     cohens_d=cohend, cliffs_delta=cdelta,
+                                                                    ci_low=ci.auc(r_auc)[1], ci_high=ci.auc(r_auc)[3],
                                                                     auroc=as.numeric(auc(r_auc)), p=wt$p.value)}}
 pairwise_df <- do.call(rbind, pairwise_results)
-pairwise_df
-#                                                                        score   group1   group2    n1    n2       mean1       sd1       mean2       sd2      cohens_d cliffs_delta     auroc            p
-# Acinar_Marker_Score1 Acinar vs Other                    Acinar_Marker_Score1   Acinar    Other 35405 33235  2.42625546 1.3985815 -0.10789582 0.6786156    2.28319046   0.86631536 0.9331577 0.000000e+00
-# Acinar_Marker_Score1 Acinar_i vs Other                  Acinar_Marker_Score1 Acinar_i    Other 43923 33235 -0.05697696 0.6693358 -0.10789582 0.6786156    0.07562034  -0.02236396 0.5111820 9.932991e-08
-# Acinar_Marker_Score1 Acinar vs Acinar_i                 Acinar_Marker_Score1   Acinar Acinar_i 35405 43923  2.42625546 1.3985815 -0.05697696 0.6693358    2.34532966   0.86169492 0.9308475 0.000000e+00
-# Acinar_Journal_Marker_Score1 Acinar vs Other    Acinar_Journal_Marker_Score1   Acinar    Other 35405 33235  2.81021722 1.3202344 -0.07410696 0.7242081    2.68613274   0.90812852 0.9540643 0.000000e+00
-# Acinar_Journal_Marker_Score1 Acinar_i vs Other  Acinar_Journal_Marker_Score1 Acinar_i    Other 43923 33235  0.63534241 0.8815920 -0.07410696 0.7242081    0.86780254   0.61936167 0.8096808 0.000000e+00
-# Acinar_Journal_Marker_Score1 Acinar vs Acinar_i Acinar_Journal_Marker_Score1   Acinar Acinar_i 35405 43923  2.81021722 1.3202344  0.63534241 0.8815920    1.97858429   0.76829407 0.8841470 0.000000e+00
-# Acinar_Markers_Valid_Score1 Acinar vs Other      Acinar_Markers_Valid_Score1   Acinar    Other 35405 33235  3.72996131 1.7545544 -0.03482292 0.9584076    2.64064004   0.88913301 0.9445665 0.000000e+00
-# Acinar_Markers_Valid_Score1 Acinar_i vs Other    Acinar_Markers_Valid_Score1 Acinar_i    Other 43923 33235  0.77917916 1.1925432 -0.03482292 0.9584076    0.74146370   0.51960144 0.7598007 0.000000e+00
-# Acinar_Markers_Valid_Score1 Acinar vs Acinar_i   Acinar_Markers_Valid_Score1   Acinar Acinar_i 35405 43923  3.72996131 1.7545544  0.77917916 1.1925432    2.00711021   0.76505213 0.8825261 0.000000e+00
+pairwise_df$p_adj <- p.adjust(pairwise_df$p, method="bonferroni")
+# Reorder by average AUROC so best markers are at top
+pairwise_df$score <- reorder(pairwise_df$score, pairwise_df$auroc, FUN=mean)
+# add significance label column
+pairwise_df$signif <- ifelse(!is.na(pairwise_df$p_adj) & pairwise_df$p_adj < 0.001, "*", "")
+
+write.csv(pairwise_df, paste0(egas_dir, "acinar_auroc_pairwise_across_samples.csv"))
+pairwise_df <- read.csv(paste0(egas_dir, "acinar_auroc_pairwise_across_samples.csv"))
+pairwise_df[,2:22]
+#                             score  comparison_groups       type   group1   group2    n1    n2       mean1       sd1       mean2       sd2      frac1      frac2     cohens_d cliffs_delta    ci_low   ci_high     auroc             p         p_adj signif
+#   1           Acinar_Marker_Score1    Acinar_vs_Other Marker_set   Acinar    Other 35405 33235  2.42625546 1.3985815 -0.10789582 0.6786156 0.91286541 0.08692643  2.283190461  0.866315363 0.9310688 0.9352465 0.9331577  0.000000e+00  0.000000e+00      *
+#   2           Acinar_Marker_Score1  Acinar_i_vs_Other Marker_set Acinar_i    Other 43923 33235 -0.05697696 0.6693358 -0.10789582 0.6786156 0.19616146 0.08692643  0.075620343 -0.022363955 0.5070947 0.5152693 0.5111820  9.932991e-08  4.171856e-06      *
+#   3           Acinar_Marker_Score1 Acinar_vs_Acinar_i Marker_set   Acinar Acinar_i 35405 43923  2.42625546 1.3985815 -0.05697696 0.6693358 0.91286541 0.19616146  2.345329663  0.861694920 0.9289866 0.9327083 0.9308475  0.000000e+00  0.000000e+00      *
+#   4   Acinar_Journal_Marker_Score1    Acinar_vs_Other Marker_set   Acinar    Other 35405 33235  2.81021722 1.3202344 -0.07410696 0.7242081 0.94896201 0.16717316  2.686132738  0.908128523 0.9524800 0.9556486 0.9540643  0.000000e+00  0.000000e+00      *
+#   5   Acinar_Journal_Marker_Score1  Acinar_i_vs_Other Marker_set Acinar_i    Other 43923 33235  0.63534241 0.8815920 -0.07410696 0.7242081 0.74127450 0.16717316  0.867802542  0.619361668 0.8064478 0.8129139 0.8096808  0.000000e+00  0.000000e+00      *
+#   6   Acinar_Journal_Marker_Score1 Acinar_vs_Acinar_i Marker_set   Acinar Acinar_i 35405 43923  2.81021722 1.3202344  0.63534241 0.8815920 0.94896201 0.74127450  1.978584285  0.768294067 0.8815677 0.8867264 0.8841470  0.000000e+00  0.000000e+00      *
+#   7  Acinar_Markers_Journal_Valid1    Acinar_vs_Other Marker_set   Acinar    Other 35405 33235  3.72996131 1.7545544 -0.03482292 0.9584076 0.92780681 0.12282233  2.640640040  0.889133010 0.9427647 0.9463683 0.9445665  0.000000e+00  0.000000e+00      *
+#   8  Acinar_Markers_Journal_Valid1  Acinar_i_vs_Other Marker_set Acinar_i    Other 43923 33235  0.77917916 1.1925432 -0.03482292 0.9584076 0.64237415 0.12282233  0.741463701  0.519601438 0.7562919 0.7633095 0.7598007  0.000000e+00  0.000000e+00      *
+#   9  Acinar_Markers_Journal_Valid1 Acinar_vs_Acinar_i Marker_set   Acinar Acinar_i 35405 43923  3.72996131 1.7545544  0.77917916 1.1925432 0.92780681 0.64237415  2.007110206  0.765052134 0.8799135 0.8851387 0.8825261  0.000000e+00  0.000000e+00      *
+#   10                         PRSS1    Acinar_vs_Other       Gene   Acinar    Other 35405 33235  5.31780701 2.9036002  0.33805610 1.4186144 0.78669679 0.05581465  2.158358925  0.747813652 0.8715093 0.8763044 0.8739068  0.000000e+00  0.000000e+00      *
+#   11                         PRSS1  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  0.41688188 1.5262967  0.33805610 1.4186144 0.07276370 0.05581465  0.053229223  0.016266590 0.5063977 0.5098689 0.5081333  1.581546e-19  6.642494e-18      *
+#   12                         PRSS1 Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  5.31780701 2.9036002  0.41688188 1.5262967 0.78669679 0.07276370  2.180309065  0.742959772 0.8690961 0.8738637 0.8714799  0.000000e+00  0.000000e+00      *
+#   13                         PRSS2    Acinar_vs_Other       Gene   Acinar    Other 35405 33235  0.00000000 0.0000000  0.00000000 0.0000000 0.00000000 0.00000000           NA  0.000000000 0.5000000 0.5000000 0.5000000            NA            NA       
+#   14                         PRSS2  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  0.00000000 0.0000000  0.00000000 0.0000000 0.00000000 0.00000000           NA  0.000000000 0.5000000 0.5000000 0.5000000            NA            NA       
+#   15                         PRSS2 Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  0.00000000 0.0000000  0.00000000 0.0000000 0.00000000 0.00000000           NA  0.000000000 0.5000000 0.5000000 0.5000000            NA            NA       
+#   16                          CPA1    Acinar_vs_Other       Gene   Acinar    Other 35405 33235  4.52097456 2.4886682  0.30261645 1.2426719 0.78774184 0.05861291  2.124546070  0.744017592 0.8695769 0.8744407 0.8720088  0.000000e+00  0.000000e+00      *
+#   17                          CPA1  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  0.48857465 1.4968064  0.30261645 1.2426719 0.10131366 0.05861291  0.133491232  0.041534291 0.5188666 0.5226677 0.5207671  4.179704e-95  1.755476e-93      *
+#   18                          CPA1 Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  4.52097456 2.4886682  0.48857465 1.4968064 0.78774184 0.10131366  2.015013630  0.726208346 0.8606355 0.8655729 0.8631042  0.000000e+00  0.000000e+00      *
+#   19                          CPA2    Acinar_vs_Other       Gene   Acinar    Other 35405 33235  2.50434918 2.0135266  0.14163274 0.7106443 0.63013699 0.04040921  1.545958026  0.598080631 0.7963321 0.8017485 0.7990403  0.000000e+00  0.000000e+00      *
+#   20                          CPA2  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  0.24439267 0.9155994  0.14163274 0.7106443 0.06964461 0.04040921  0.123284398  0.029187732 0.5129999 0.5161879 0.5145939  4.780579e-67  2.007843e-65      *
+#   21                          CPA2 Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  2.50434918 2.0135266  0.24439267 0.9155994 0.63013699 0.06964461  1.498784246  0.576026275 0.7852430 0.7907833 0.7880131  0.000000e+00  0.000000e+00      *
+#   22                          CTRC    Acinar_vs_Other       Gene   Acinar    Other 35405 33235  3.36591913 2.2532971  0.20316657 0.9209985 0.71424940 0.04913495  1.817060316  0.677047360 0.8359319 0.8411155 0.8385237  0.000000e+00  0.000000e+00      *
+#   23                          CTRC  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  0.24760142 0.9746807  0.20316657 0.9209985 0.06395283 0.04913495  0.046678741  0.014258263 0.5054950 0.5087632 0.5071291  3.938499e-17  1.654170e-15      *
+#   24                          CTRC Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  3.36591913 2.2532971  0.24760142 0.9746807 0.71424940 0.06395283  1.866192905  0.673711978 0.8342877 0.8394242 0.8368560  0.000000e+00  0.000000e+00      *
+#   25                        CELA3A    Acinar_vs_Other       Gene   Acinar    Other 35405 33235  4.27416378 2.3778772  0.26059314 1.1146537 0.78435249 0.05421995  2.139812733  0.746429686 0.8708098 0.8756199 0.8732148  0.000000e+00  0.000000e+00      *
+#   26                        CELA3A  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  0.43157791 1.4041639  0.26059314 1.1146537 0.09161487 0.05421995  0.132807070  0.037073823 0.5167169 0.5203569 0.5185369  7.783257e-83  3.268968e-81      *
+#   27                        CELA3A Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  4.27416378 2.3778772  0.43157791 1.4041639 0.78435249 0.09161487  2.020939376  0.721443166 0.8582208 0.8632224 0.8607216  0.000000e+00  0.000000e+00      *
+#   28                        CELA2A    Acinar_vs_Other       Gene   Acinar    Other 35405 33235  0.41152398 0.9008435  0.08765101 0.4642879 0.19389917 0.03788175  0.447857380  0.154860538 0.5751231 0.5797374 0.5774303  0.000000e+00  0.000000e+00      *
+#   29                        CELA2A  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  0.39350632 1.0332126  0.08765101 0.4642879 0.13371127 0.03788175  0.365422227  0.098178513 0.5472036 0.5509749 0.5490893  0.000000e+00  0.000000e+00      *
+#   30                        CELA2A Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  0.41152398 0.9008435  0.39350632 1.0332126 0.19389917 0.13371127  0.018454005  0.045130019 0.5199608 0.5251692 0.5225650  9.949191e-66  4.178660e-64      *
+#   31                         PNLIP    Acinar_vs_Other       Gene   Acinar    Other 35405 33235  2.44596311 2.5158669  0.15098667 0.8153325 0.50899590 0.03529412  1.211795325  0.478772023 0.7366080 0.7421641 0.7393860  0.000000e+00  0.000000e+00      *
+#   32                         PNLIP  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  0.15352932 0.7858379  0.15098667 0.8153325 0.03902284 0.03529412  0.003183586  0.003455673 0.5003830 0.5030727 0.5017278  1.228150e-02  5.158232e-01       
+#   33                         PNLIP Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  2.44596311 2.5158669  0.15352932 0.7858379 0.50899590 0.03902284  1.288192183  0.479257274 0.7368798 0.7423774 0.7396286  0.000000e+00  0.000000e+00      *
+#   34                         AMY2A    Acinar_vs_Other       Gene   Acinar    Other 35405 33235  2.89983944 2.5034248  0.19502017 0.9374136 0.60838865 0.04525350  1.414195433  0.568974944 0.7817108 0.7872641 0.7844875  0.000000e+00  0.000000e+00      *
+#   35                         AMY2A  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  0.26726947 1.0952528  0.19502017 0.9374136 0.06226806 0.04525350  0.070128979  0.016934623 0.5068771 0.5100576 0.5084673  1.663908e-24  6.988412e-23      *
+#   36                         AMY2A Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  2.89983944 2.5034248  0.26726947 1.0952528 0.60838865 0.06226806  1.415016467  0.554538996 0.7744733 0.7800657 0.7772695  0.000000e+00  0.000000e+00      *
+#   37                         AMY2B    Acinar_vs_Other       Gene   Acinar    Other 35405 33235  1.56412237 1.7357677  0.12991608 0.6222873 0.48326508 0.04570483  1.086778580  0.443057209 0.7186992 0.7243580 0.7215286  0.000000e+00  0.000000e+00      *
+#   38                         AMY2B  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  0.27833785 0.9173504  0.12991608 0.6222873 0.08997564 0.04570483  0.184684801  0.044924239 0.5207168 0.5242074 0.5224621 7.785660e-128 3.269977e-126      *
+#   39                         AMY2B Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  1.56412237 1.7357677  0.27833785 0.9173504 0.48326508 0.08997564  0.955549586  0.398042973 0.6960745 0.7019685 0.6990215  0.000000e+00  0.000000e+00      *
+#   40                         RBPJL    Acinar_vs_Other       Gene   Acinar    Other 35405 33235  2.50708129 1.7800044  0.27963641 0.9551724 0.70636916 0.08454942  1.545924506  0.631636428 0.8129972 0.8186392 0.8158182  0.000000e+00  0.000000e+00      *
+#   41                         RBPJL  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  2.62942843 2.1092449  0.27963641 0.9551724 0.63101336 0.08454942  1.373798756  0.574497132 0.7846436 0.7898535 0.7872486  0.000000e+00  0.000000e+00      *
+#   42                         RBPJL Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  2.50708129 1.7800044  2.62942843 2.1092449 0.70636916 0.63101336 -0.062133053 -0.098006357 0.5450821 0.5529242 0.5490032 1.116317e-129 4.688530e-128      *
+#   43                         FOXP2    Acinar_vs_Other       Gene   Acinar    Other 35405 33235  1.10900718 1.2770155  0.28430998 0.7959901 0.46741986 0.12155860  0.769721412  0.347542508 0.6705937 0.6769488 0.6737713  0.000000e+00  0.000000e+00      *
+#   44                         FOXP2  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  1.40975827 1.5600362  0.28430998 0.7959901 0.46647542 0.12155860  0.873955301  0.377058609 0.6856834 0.6913752 0.6885293  0.000000e+00  0.000000e+00      *
+#   45                         FOXP2 Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  1.10900718 1.2770155  1.40975827 1.5600362 0.46741986 0.46647542 -0.208766810 -0.111405276 0.4406324 0.4479623 0.4442974 4.363604e-189 1.832714e-187      *
+
+library(ggrepel)
+fp <- ggplot(pairwise_df, aes(y=score, x=auroc, color=comparison_groups, shape=type)) +
+  geom_point(size=1) +
+  geom_errorbarh(aes(xmin=ci_low, xmax=ci_high), height=0.2) +
+  geom_vline(xintercept=0.5, linetype="dashed", color="grey50") +
+  geom_text_repel(aes(label=signif), vjust=-0.6, hjust=0.5, size=3, color="black") +
+  xlim(0.4, 1.0) +
+  scale_shape_manual(values=c("Marker_set"=17, "Gene"=16)) +
+  theme(axis.text.y=element_text(size=10, face=c(rep("plain",length(genes)), rep("bold", length(scores)))), legend.text=element_text(size=10)) +
+  labs(x="AUROC (95% CI)", y="", color="Comparison", shape="", title="Forest plot for Acinar Genes")
+ggsave(paste0(egas_dir, "/plots/forest_auroc_acinar_markers.png"), plot = fp, width = 25, height =20, units = "cm")
 
 
-# 3) Per-gene checks: mean, fraction expressing (>0), AUROC (Acinar vs Acinar_i)
+# 2) Per-donor Level: “Across independent biological replicates, how consistent is marker X in separating the groups?”
+pairwise_results <- list()
+pairs <- list(c("Acinar","Other"), c("Acinar_i","Other"), c("Acinar","Acinar_i"))
+for (pid in unique(ap@meta.data$patient_ID)){
+    for(g in c(scores, genes)){
+    for(pp in pairs){
+      if (g %in% scores){
+        a <- ap@meta.data[ap$patient_ID==pid & ap$group3==pp[1], g]
+        b <- ap@meta.data[ap$patient_ID==pid & ap$group3==pp[2], g]
+      }else if (g %in% genes){
+        if(!g %in% rownames(expr)) next
+        a <- ap$patient_ID==pid & ap@meta.data$group3==pp[1]
+        b <- ap$patient_ID==pid & ap@meta.data$group3==pp[2]
+        a <- expr[g,a]
+        b <- expr[g,b]}
+      if (length(a) < 2 | length(b) < 2) next  # skip if not enough cells
+      wt <- wilcox.test(a, b, alternative="two.sided")
+      # effect sizes
+      cohend <- (mean(a)-mean(b))/sqrt(((length(a)-1)*sd(a)^2 + (length(b)-1)*sd(b)^2)/(length(a)+length(b)-2))
+      cliffs <- function(x,y){ (sum(outer(x,y,">")) - sum(outer(x,y,"<"))) / (length(x)*length(y)) }
+      cdelta <- cliffs(a,b)
+      r_auc <- roc(c(rep(1,length(a)), rep(0,length(b))), c(a,b), quiet=TRUE)
+      pairwise_results[[paste0(pid,"_", g,"_", pp[1], "_vs_", pp[2])]] <- data.frame(patient_ID=pid, score=g,
+                                                                            comparison_groups=paste0(pp[1], "_vs_", pp[2]),
+                                                                            type=ifelse(g %in% scores, "Marker_set", "Gene"),
+                                                                            group1=pp[1], group2=pp[2],
+                                                                            n1=length(a), n2=length(b),
+                                                                            mean1=mean(a), sd1=sd(a), mean2=mean(b), sd2=sd(b),
+                                                                            frac1=mean(a>0), frac2=mean(b>0),
+                                                                            cohens_d=cohend, cliffs_delta=cdelta,
+                                                                            ci_low=ci.auc(r_auc)[1], ci_high=ci.auc(r_auc)[3],
+                                                                            auroc=as.numeric(auc(r_auc)), p=wt$p.value)}}}
+
+per_donor_df <- do.call(rbind, pairwise_results)
+per_donor_df$p_adj <- p.adjust(per_donor_df$p, method="bonferroni")
+
+# add significance label column
+per_donor_df$signif <- ifelse(!is.na(per_donor_df$p_adj) & per_donor_df$p_adj < 0.001, "*", "")
+
+write.csv(per_donor_df, paste0(egas_dir, "acinar_auroc_pairwise_per_donor.csv"))
+
+#######################################################################
+
+per_donor_df <- read.csv(paste0(egas_dir, "acinar_auroc_pairwise_per_donor.csv"))
+scores <- c("Acinar_Marker_Score1","Acinar_Journal_Marker_Score1","Acinar_Markers_Journal_Valid1")
 genes <- c("PRSS1","PRSS2","CPA1","CPA2","CTRC","CELA3A","CELA2A","PNLIP","AMY2A","AMY2B","RBPJL","FOXP2")
-expr <- GetAssayData(ap, slot="data") # log-normalized counts maybe
-gene_stats <- lapply(genes, function(g){
-  if(!g %in% rownames(expr)) return(NULL)
-  v <- as.numeric(expr[g, ])
-  a <- v[ap$group3=="Acinar"]
-  i <- v[ap$group3=="Acinar_i"]
-  other <- v[ap$group3=="Other"]
-  df <- data.frame(gene=g,
-                   mean_acinar=mean(a), mean_acinar_i=mean(i), mean_other=mean(other),
-                   frac_acinar=mean(a>0), frac_acinar_i=mean(i>0), frac_other=mean(other>0))
-  # AUROC acinar vs acinar_i for the gene
-  roc_obj <- roc(c(rep(1,length(a)), rep(0,length(i))), c(a,i), quiet=TRUE)
-  df$auroc_acinar_vs_acinar_i <- as.numeric(auc(roc_obj))
-  df})
 
-gene_stats_df <- do.call(rbind, gene_stats)
-gene_stats_df
-#      gene mean_acinar mean_acinar_i mean_other frac_acinar frac_acinar_i frac_other auroc_acinar_vs_acinar_i
-# 1   PRSS1    5.317807     0.4168819 0.33805610   0.7866968    0.07276370 0.05581465                0.8714799
-# 2   PRSS2    0.000000     0.0000000 0.00000000   0.0000000    0.00000000 0.00000000                0.5000000
-# 3    CPA1    4.520975     0.4885747 0.30261645   0.7877418    0.10131366 0.05861291                0.8631042
-# 4    CPA2    2.504349     0.2443927 0.14163274   0.6301370    0.06964461 0.04040921                0.7880131
-# 5    CTRC    3.365919     0.2476014 0.20316657   0.7142494    0.06395283 0.04913495                0.8368560
-# 6  CELA3A    4.274164     0.4315779 0.26059314   0.7843525    0.09161487 0.05421995                0.8607216
-# 7  CELA2A    0.411524     0.3935063 0.08765101   0.1938992    0.13371127 0.03788175                0.5225650
-# 8   PNLIP    2.445963     0.1535293 0.15098667   0.5089959    0.03902284 0.03529412                0.7396286
-# 9   AMY2A    2.899839     0.2672695 0.19502017   0.6083886    0.06226806 0.04525350                0.7772695
-# 10  AMY2B    1.564122     0.2783379 0.12991608   0.4832651    0.08997564 0.04570483                0.6990215
-# 11  RBPJL    2.507081     2.6294284 0.27963641   0.7063692    0.63101336 0.08454942                0.5490032
-# 12  FOXP2    1.109007     1.4097583 0.28430998   0.4674199    0.46647542 0.12155860                0.4442974
+library(metafor)
+# create pdf comparing marker genes by donor
+res <- list()
+pdf(paste0(egas_dir, "/plots/meta_forest_plots.pdf"), width=8, height=8)
+for (cg in unique(per_donor_df$comparison_groups)) {
+  for (g in c(scores, genes)) {
+    # subset per donor values for this gene/marker + comparison
+    df <- subset(per_donor_df, score == g & comparison_groups == cg)
+    # skip if empty or all NA
+    if (nrow(df) == 0 || all(is.na(df$auroc))) next
+    # derive SE from CI width
+    df$sei <- (df$ci_high - df$ci_low) / 3.92
+    # drop rows with missing SE or AUROC
+    df <- df[!is.na(df$sei) & !is.na(df$auroc), ]
+    
+    # only run if there’s at least 2 donors left
+    if (nrow(df) < 2) next
+    # fit model
+    fit <- tryCatch(
+      rma(yi = df$auroc, sei = df$sei, method="REML"),
+      error = function(e) NULL)
+    p_val <- tryCatch(
+      rma(yi = df$auroc-0.5, sei = df$sei, method="REML"),
+      error = function(e) NULL)
+    fit$pval <- p_val$pval
+    # only create plots, if res != 0
+    if (is.null(fit)) next
+    res[[paste0(cg, "_", g)]] <- fit
+    # plot
+    forest(
+      fit,
+      slab = df$patient_ID,
+      xlab = "AUROC (95% CI)",
+      alim = c(0.4, 1),
+      main=paste0(" AUROC for ", g, " (", cg, ")"),
+      mlab = "Pooled")}}
+dev.off()
 
-gene_stats <- gene_stats_df[match(x_label, gene_stats_df$gene), c("gene", "auroc_acinar_vs_acinar_i")]
-gene_stats
-#      gene auroc_acinar_vs_acinar_i
-# 1   PRSS1                0.8714799
-# 2   PRSS2                0.5000000
-# 3    CPA1                0.8631042
-# 5    CTRC                0.8368560
-# 6  CELA3A                0.8607216
-# 7  CELA2A                0.5225650
-# 8   PNLIP                0.7396286
-# 9   AMY2A                0.7772695
-# 10  AMY2B                0.6990215
-# 4    CPA2                0.7880131
-# 11  RBPJL                0.5490032
-# 12  FOXP2                0.4442974
+# create summary of marker gene auroc
+meta_summary <- do.call(rbind, lapply(names(res), function(nm) {
+  if (is.null(res[[nm]])) return(NULL)
+  # Extract the subset of donor-level data used
+  if(grepl("Acinar_i",nm)){
+    cg <- strsplit(nm, "_")[[1]][1:4] |> paste(collapse="_")
+  }else{
+    cg <- strsplit(nm, "_")[[1]][1:3] |> paste(collapse="_")}
+  g  <- sub(paste0(cg, "_"), "", nm)
+  # create df
+  data.frame(
+    comparison_gene = nm,
+    gene = g,
+    comparison_group = cg,
+    k = res[[nm]]$k, # number of donors
+    tau2 = res[[nm]]$tau2, # heterogeneity
+    pooled_auc =unname(res[[nm]]$b),
+    ci_lb = unname(res[[nm]]$ci.lb),
+    ci_ub = unname(res[[nm]]$ci.ub),
+    pval = unname(res[[nm]]$pval))}))
+
+# adjust for multiple testing
+meta_summary$p_adj <- p.adjust(meta_summary$pval, method="BH")
+table(meta_summary$p_adj <0.05)
+# FALSE  TRUE
+# 5    37
+table(meta_summary$p_adj <0.01)
+# FALSE  TRUE
+# 9    33
+table(meta_summary$p_adj <0.001)
+# FALSE  TRUE
+# 11    31
 
 
-# 4) Per-donor AUROC (acinar vs acinar_i), same score(s)
-per_donor <- do.call(rbind, lapply(unique(ap$patient_ID), function(pid){
-  sub <- ap@meta.data[ap$patient_ID==pid & ap$group3 %in% c("Acinar","Acinar_i"), ]
-  out <- lapply(scores, function(v){
-    if(length(unique(sub$group3))<2) return(NULL)
-    lab <- ifelse(sub$group3=="Acinar", 1, 0)
-    roc_obj <- roc(lab, sub[[v]], quiet=TRUE)
-    data.frame(patient_ID=pid, score=v,
-               n_acinar=sum(lab==1), n_acinar_i=sum(lab==0),
-               auroc=as.numeric(auc(roc_obj)),
-               ci_low=ci.auc(roc_obj)[1], ci_high=ci.auc(roc_obj)[3])})
-  do.call(rbind, out)}))
-per_donor
-#    patient_ID                        score n_acinar n_acinar_i     auroc    ci_low   ci_high
-# 1     AFES448         Acinar_Marker_Score1     7591      16444 0.8583470 0.8527424 0.8639516
-# 2     AFES448 Acinar_Journal_Marker_Score1     7591      16444 0.7615071 0.7543412 0.7686729
-# 3     AFES448  Acinar_Markers_Valid_Score1     7591      16444 0.7719646 0.7648209 0.7791083
-# 4     AFES365         Acinar_Marker_Score1     5886       9860 0.9272093 0.9221969 0.9322217
-# 5     AFES365 Acinar_Journal_Marker_Score1     5886       9860 0.9110560 0.9057744 0.9163376
-# 6     AFES365  Acinar_Markers_Valid_Score1     5886       9860 0.9054147 0.8998546 0.9109748
-# 7     AGBR024         Acinar_Marker_Score1    13918       8820 0.9620582 0.9596781 0.9644384
-# 8     AGBR024 Acinar_Journal_Marker_Score1    13918       8820 0.9361508 0.9326574 0.9396441
-# 9     AGBR024  Acinar_Markers_Valid_Score1    13918       8820 0.9277068 0.9239652 0.9314484
-# 10     TUM_13         Acinar_Marker_Score1     1011       2484 0.9495621 0.9391317 0.9599924
-# 11     TUM_13 Acinar_Journal_Marker_Score1     1011       2484 0.9227392 0.9101076 0.9353707
-# 12     TUM_13  Acinar_Markers_Valid_Score1     1011       2484 0.9122650 0.8987135 0.9258165
-# 13     TUM_25         Acinar_Marker_Score1     3654       2810 0.9522376 0.9473152 0.9571600
-# 14     TUM_25 Acinar_Journal_Marker_Score1     3654       2810 0.9241673 0.9170583 0.9312763
-# 15     TUM_25  Acinar_Markers_Valid_Score1     3654       2810 0.9163193 0.9087660 0.9238725
-# 16     TUM_C1         Acinar_Marker_Score1     3345       3505 0.9075340 0.9008364 0.9142316
-# 17     TUM_C1 Acinar_Journal_Marker_Score1     3345       3505 0.8323116 0.8225446 0.8420785
-# 18     TUM_C1  Acinar_Markers_Valid_Score1     3345       3505 0.8230768 0.8128917 0.8332619
+#######################################################################
+# create plots for summary
+ggplot(meta_summary, aes(x = pooled_auc, 
+                         y = gene, 
+                         color = comparison_group)) +
+  geom_point(size=2, position=position_dodge(width=0.5)) +
+  geom_errorbarh(aes(xmin = ci_lb, xmax = ci_ub),
+                 height=0.2, position=position_dodge(width=0.5)) +
+  geom_vline(xintercept = 0.5, linetype="dashed", color="red") +
+  theme_minimal(base_size = 12) +
+  labs(
+    x = "Pooled AUROC (95% CI)",
+    y = "Gene / Marker Set",
+    color = "Comparison group",
+    title = "Meta-analyzed AUROCs per Donor by gene and cell type")
 
-# 5) Per-donor Wilcoxon (get p-values per donor) and p.adjust across donors
-per_donor_stats <- do.call(rbind, lapply(unique(ap$patient_ID), function(pid){
-  sub <- ap@meta.data[ap$patient_ID==pid, ]
-  if(!all(c("Acinar","Acinar_i") %in% unique(sub$group3))) return(NULL)
-  a <- sub[sub$group3=="Acinar", "Acinar_Marker_Score1"]
-  i <- sub[sub$group3=="Acinar_i", "Acinar_Marker_Score1"]
-  p <- wilcox.test(a,i)$p.value
-  data.frame(patient_ID=pid, p_raw=p, n_acinar=length(a), n_acinar_i=length(i))}))
-per_donor_stats$p_adj <- p.adjust(per_donor_stats$p_raw, method="bonferroni")
-per_donor_stats
-#   patient_ID p_raw n_acinar n_acinar_i p_adj
-# 1    AFES448     0     7591      16444     0
-# 2    AFES365     0     5886       9860     0
-# 3    AGBR024     0    13918       8820     0
-# 4     TUM_13     0     1011       2484     0
-# 5     TUM_25     0     3654       2810     0
-# 6     TUM_C1     0     3345       3505     0
+ggplot(meta_summary, aes(x = pooled_auc, y = gene)) +
+  geom_point(size=2) +
+  geom_errorbarh(aes(xmin = ci_lb, xmax = ci_ub), height=0.2) +
+  geom_vline(xintercept = 0.5, linetype="dashed", color="red") +
+  geom_vline(xintercept = 0.4, linewidth=2) +
+  geom_vline(xintercept = 1, linewidth=2) +
+  theme_minimal(base_size = 12) +
+  xlim(0.4,1)+
+  labs(x = "Pooled AUROC (95% CI)", y = "Gene / Marker Set", title = "Meta-analyzed AUROCs per Donor by gene and cell type") +
+  facet_wrap(~comparison_group)
+#######################################################################
+
+# adjust score names
+meta_summary$gene <- gsub("Acinar_Marker_Score1","MarkerScore", meta_summary$gene)
+meta_summary$gene <- gsub("Acinar_Journal_Marker_Score1","JournalScore", meta_summary$gene)
+meta_summary$gene <- gsub("Acinar_Markers_Journal_Valid1","ValidScore", meta_summary$gene)
+meta_summary$signif <- ""
+meta_summary$signif[meta_summary$p_adj < 0.05] <- "*" 
+meta_summary$signif[meta_summary$p_adj < 0.01] <- "**" 
+meta_summary$signif[meta_summary$p_adj < 0.001] <- "***" 
+
+library(tidytext)
+canonicals <- c("PRSS1","CPA1","CTRC","CELA3A","CELA2A","PNLIP","AMY2A","AMY2B","RBPJL", "MarkerScore", "ValidScore")
+plot_df <- meta_summary %>%
+  mutate(
+    is_canonical = gene %in% canonicals,
+    gene_label = ifelse(is_canonical, paste0("<b>", gene, "</b>"), gene),
+    gene_col = ifelse(is_canonical, gene, "Invalid"),
+    gene = reorder_within(gene_label, pooled_auc, comparison_group))
+
+library(RColorBrewer)
+valid_genes <- unique(plot_df$gene_col)[!unique(plot_df$gene_col) == "Invalid"]
+cols <- RColorBrewer::brewer.pal(length(valid_genes),"Paired")
+names(cols) <- valid_genes
+cols <- c(cols, "Invalid"="grey")
+
+library(ggtext)
+p1 <- ggplot(plot_df, aes(x = pooled_auc, y = gene, colour = gene_col)) +
+  geom_point(size=2.5) +
+  geom_errorbarh(aes(xmin = ci_lb, xmax = ci_ub), height=0.2, linewidth=1.5) +
+  geom_vline(xintercept = 0.5, linetype="dashed", color="red") +
+  xlim(0.45,1) +
+  facet_wrap(~comparison_group, scales="free_y") +
+  scale_y_reordered() +
+  theme(axis.text.y = element_markdown(size=10)) +
+  geom_text(aes(label=signif), vjust=-0.6, hjust=0.5, size=3, color="black") +
+  scale_color_manual(values=cols, labels=names(cols), guide="none") +
+  labs(x="Pooled AUROC (95% CI)", y="Gene / Marker Set", 
+       title="Meta-analyzed AUROCs across Donors: Colored by canonical Gene / Acinar Markers (bold)")
+ggsave(paste0(egas_dir, "plots/forest_across_donors_colored.png"), plot = p1, width = 35, height =25, units = "cm")
 
 #################################################################################################################################################################
 
@@ -352,4 +505,5 @@ sessionInfo()
 # [19] pbmcsca.SeuratData_3.0.0     pancreasref.SeuratData_1.0.0 panc8.SeuratData_3.0.2      
 # [22] SeuratData_0.2.2.9001        patchwork_1.3.1              Seurat_5.0.0                
 # [25] SeuratObject_5.1.0           sp_2.2-0                     dplyr_1.1.4                 
-# [28] Matrix_1.7-3                
+# [28] Matrix_1.7-3                           
+
