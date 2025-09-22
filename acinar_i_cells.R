@@ -15,7 +15,7 @@ required_packages <- c('Matrix', 'dplyr', 'Seurat', 'patchwork', 'SeuratData', '
 invisible(lapply(required_packages, library, character.only = T))
 
 # obtain directories
-# ref_dir with a folder EGAS00001004653, where the adult_pancreas.gz file can loaded
+# ref_dir with a folder EGAS00001004653, where the adult_pancreas.gz file can be loaded
 egas_nr <- "EGAS00001004653"
 egas_dir <- paste0(ref_dir,egas_nr, "/")
 
@@ -61,7 +61,11 @@ x_label <- unique(c(acinar_markers, acinar_journal_markers))
 ############################################################################################################################################################
 
 # create dimplots for all samples combined
-p1 <- DimPlot(ap, group.by="Cluster", label=T,label.size=2, repel=T)+ NoLegend()
+pal_col <- colorRampPalette(brewer.pal(3,"Blues"))
+col_list <- c(pal_col(length(unique(ap@meta.data$Cluster)[!unique(ap@meta.data$Cluster) %in% "Acinar-i"])), "darkred")
+names(col_list) <- c(unique(as.character(ap@meta.data$Cluster))[!unique(ap@meta.data$Cluster) %in% "Acinar-i"], "Acinar-i")
+p1 <- DimPlot(ap, group.by="Cluster", label=T,label.size=2, repel=T, cols=col_list)+ NoLegend() + ggtitle("Cell Type: Acinar-i darkred, other in blue colors")
+p1[[1]]$layers[[1]]$aes_params$alpha <-  ifelse(ap@meta.data$Acinar_i == "TRUE", 1, .8)
 p2 <- DimPlot(ap, group.by="Acinar_i", label=T,label.size=2, repel=T, cols= c("gray", "red"))+ NoLegend()
 p3 <- FeaturePlot(ap, features = "Acinar_Marker_Score1")+ ggtitle("MarkerScore") + NoLegend() &
   scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred")) 
@@ -69,8 +73,8 @@ p4 <- FeaturePlot(ap, features = c("Acinar_Journal_Marker_Score1"))+ ggtitle("Jo
   scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred")) 
 p5 <- FeaturePlot(ap, features = c("Acinar_Markers_Journal_Valid1")) + ggtitle("ValidScore")&
   scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred"))
-p_patched<-  wrap_plots(p1, p2, p3, p4, p5, ncol=5, guides="collect") + plot_annotation(title= paste0("UMAP colored by Cell Type and Acinar Marker Expression in all adult pancreas samples")) & theme(plot.title = element_text(size = 14, face = "bold"))
-ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_umap.png"), plot = p_patched, width = 50, height =12, units = "cm")
+p_patched<-  wrap_plots(p1, p3, p4, p5, ncol=2, guides="collect") + plot_annotation(title= paste0("UMAP colored by Cell Type and Acinar Marker Expression in all adult pancreas samples")) & theme(plot.title = element_text(size = 14, face = "bold"))
+ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_umap.png"), plot = p_patched, width = 23, height =20, units = "cm")
 
 
 # create dotplots for all samples combined
@@ -235,6 +239,9 @@ ggsave(paste0(egas_dir, "/plots/forest_auroc_acinar_markers.png"), plot = fp, wi
 
 
 # 2) Per-donor Level: “Across independent biological replicates, how consistent is marker X in separating the groups?”
+# Acinar Marker Expression Levels across donors, using pooled AUROC (Area under the Receiver Operating Curve) computation, 
+# CI by DeLong, pooling by Random Effect Modelling (metafor::rma()) with Restricted Maximum Likelihood (REML), 
+# Benjamini-Hochberg adjusted p values for pooled AUROC != 0.5: *p<0.05, **p<0.01, ***p<0.001)
 pairwise_results <- list()
 pairs <- list(c("Acinar","Other"), c("Acinar_i","Other"), c("Acinar","Acinar_i"))
 for (pid in unique(ap@meta.data$patient_ID)){
@@ -505,5 +512,5 @@ sessionInfo()
 # [19] pbmcsca.SeuratData_3.0.0     pancreasref.SeuratData_1.0.0 panc8.SeuratData_3.0.2      
 # [22] SeuratData_0.2.2.9001        patchwork_1.3.1              Seurat_5.0.0                
 # [25] SeuratObject_5.1.0           sp_2.2-0                     dplyr_1.1.4                 
-# [28] Matrix_1.7-3                           
+# [28] Matrix_1.7-3                
 
