@@ -1,3 +1,4 @@
+
 # check acinar_i cells using the unmodified dataset
 
 #######################
@@ -11,7 +12,7 @@
 ##############################################################
 
 # Load required libraries 
-required_packages <- c('Matrix', 'dplyr', 'Seurat', 'patchwork', 'SeuratData', 'ggplot2', 'SeuratDisk', 'viridis')
+required_packages <- c('Matrix', 'dplyr', 'Seurat', 'patchwork', 'SeuratData', 'ggplot2', 'SeuratDisk', 'viridis', 'ggpubr', 'ggrepel', 'metafor', 'tidytext', 'RColorBrewer', 'ggtext')
 invisible(lapply(required_packages, library, character.only = T))
 
 # obtain directories
@@ -47,7 +48,7 @@ table(ap@meta.data$patient_ID)
 # add module scores for acinar cell markers
 acinar_markers <- c("PRSS1", "PRSS2", "CPA1", "CTRC", "CELA3A", "CELA2A", "PNLIP", "AMY2A", "AMY2B")
 acinar_journal_markers <- c("PRSS1","CPA1","CPA2", "RBPJL", "FOXP2")
-acinar_markers_valid <- c("PRSS1","CPA1", "RBPJL")
+acinar_markers_valid <- c("PRSS1","CPA1","CPA2", "RBPJL")
 ap <- AddModuleScore(ap, features = list(acinar_markers), name = "Acinar_Marker_Score")
 ap <- AddModuleScore(ap, features = list(acinar_journal_markers), name = "Acinar_Journal_Marker_Score")
 ap <- AddModuleScore(ap, features = list(acinar_markers_valid), name = "Acinar_Markers_Journal_Valid")
@@ -76,7 +77,6 @@ p5 <- FeaturePlot(ap, features = c("Acinar_Markers_Journal_Valid1")) + ggtitle("
 p_patched<-  wrap_plots(p1, p3, p4, p5, ncol=2, guides="collect") + plot_annotation(title= paste0("UMAP colored by Cell Type and Acinar Marker Expression in all adult pancreas samples")) & theme(plot.title = element_text(size = 14, face = "bold"))
 ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_umap.png"), plot = p_patched, width = 23, height =20, units = "cm")
 
-
 # create dotplots for all samples combined
 p1 <- DotPlot(ap, features = unique(c(acinar_markers, acinar_journal_markers)),cols = c("gray", "blue"), group.by = "acinar_status") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ggtitle("Acinar Markers across all adult pancreas samples") + WhiteBackground()
@@ -96,7 +96,6 @@ p5 <- FeaturePlot(ap, features = c("Acinar_Markers_Journal_Valid"), split.by="pa
 p_patched<-  wrap_plots(p1, p2, p3,p4,p5,nrow=5) + plot_annotation(title= paste0("Cell UMAP & Acinar Markers in each adult pancreas sample")) & theme(plot.title = element_text(size = 14, face = "bold"))
 ggsave(paste0(egas_dir, "plots/each_AP_acinar_cells_umap.png"), plot = p_patched, width = 80, height =55, units = "cm")
 
-
 # create dotplots for each sample separately
 p1 <- DotPlot(ap,  split.by="patient_ID",features = acinar_markers, group.by = "acinar_status", cols=viridis(6)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -105,17 +104,14 @@ p2 <- DotPlot(ap,  split.by="patient_ID", features = acinar_journal_markers, gro
 p_patched<-  wrap_plots(p1, p2,nrow=2, guides="collect") + plot_annotation(title= paste0("Acinar Markers in each adult pancreas sample"), tag_levels=list(c("Acinar Markers", "Acinar Journal Markers"))) & theme(plot.title = element_text(size = 14, face = "bold"))
 ggsave(paste0(egas_dir, "plots/each_AP_acinar_cells_dotplot.png"), plot = p_patched, width = 25, height =55, units = "cm")
 
-
 p1 <- DotPlot(ap, split.by="patient_ID", features = unique(c(acinar_markers, acinar_journal_markers)),cols=viridis(6), group.by = "acinar_status") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + ggtitle("Acinar Markers across adult pancreas samples")
 ggsave(paste0(egas_dir, "plots/each_AP_acinar_cells_dotplot.png"), plot = p1, width = 25, height =35, units = "cm")
-
 
 ############################################################################################################################################################
 
 # calculate statistics (with help of chatGPT)
 library(pROC)
-library(dplyr)
 library(rstatix) # for wilcox_test convenience
 # define groups
 ap$group3 <- "Other"
@@ -225,7 +221,6 @@ pairwise_df[,2:22]
 #   44                         FOXP2  Acinar_i_vs_Other       Gene Acinar_i    Other 43923 33235  1.40975827 1.5600362  0.28430998 0.7959901 0.46647542 0.12155860  0.873955301  0.377058609 0.6856834 0.6913752 0.6885293  0.000000e+00  0.000000e+00      *
 #   45                         FOXP2 Acinar_vs_Acinar_i       Gene   Acinar Acinar_i 35405 43923  1.10900718 1.2770155  1.40975827 1.5600362 0.46741986 0.46647542 -0.208766810 -0.111405276 0.4406324 0.4479623 0.4442974 4.363604e-189 1.832714e-187      *
 
-library(ggrepel)
 fp <- ggplot(pairwise_df, aes(y=score, x=auroc, color=comparison_groups, shape=type)) +
   geom_point(size=1) +
   geom_errorbarh(aes(xmin=ci_low, xmax=ci_high), height=0.2) +
@@ -288,7 +283,6 @@ per_donor_df <- read.csv(paste0(egas_dir, "acinar_auroc_pairwise_per_donor.csv")
 scores <- c("Acinar_Marker_Score1","Acinar_Journal_Marker_Score1","Acinar_Markers_Journal_Valid1")
 genes <- c("PRSS1","PRSS2","CPA1","CPA2","CTRC","CELA3A","CELA2A","PNLIP","AMY2A","AMY2B","RBPJL","FOXP2")
 
-library(metafor)
 # create pdf comparing marker genes by donor
 res <- list()
 pdf(paste0(egas_dir, "/plots/meta_forest_plots.pdf"), width=8, height=8)
@@ -359,7 +353,6 @@ table(meta_summary$p_adj <0.001)
 # FALSE  TRUE
 # 11    31
 
-
 #######################################################################
 # create plots for summary
 ggplot(meta_summary, aes(x = pooled_auc, 
@@ -397,7 +390,6 @@ meta_summary$signif[meta_summary$p_adj < 0.05] <- "*"
 meta_summary$signif[meta_summary$p_adj < 0.01] <- "**" 
 meta_summary$signif[meta_summary$p_adj < 0.001] <- "***" 
 
-library(tidytext)
 canonicals <- c("PRSS1","CPA1","CTRC","CELA3A","CELA2A","PNLIP","AMY2A","AMY2B","RBPJL", "MarkerScore", "ValidScore")
 plot_df <- meta_summary %>%
   mutate(
@@ -406,13 +398,11 @@ plot_df <- meta_summary %>%
     gene_col = ifelse(is_canonical, gene, "Invalid"),
     gene = reorder_within(gene_label, pooled_auc, comparison_group))
 
-library(RColorBrewer)
 valid_genes <- unique(plot_df$gene_col)[!unique(plot_df$gene_col) == "Invalid"]
 cols <- RColorBrewer::brewer.pal(length(valid_genes),"Paired")
 names(cols) <- valid_genes
 cols <- c(cols, "Invalid"="grey")
 
-library(ggtext)
 p1 <- ggplot(plot_df, aes(x = pooled_auc, y = gene, colour = gene_col)) +
   geom_point(size=2.5) +
   geom_errorbarh(aes(xmin = ci_lb, xmax = ci_ub), height=0.2, linewidth=1.5) +
@@ -438,7 +428,8 @@ top10 <- pos_cluster_markers %>%
   ungroup()
 write.csv(top10, paste0(egas_dir, "all_AP_top10_pos_cluster_markers_per_cell_type.csv"))
 
-top10 %>% filter(cluster=="Acinar-i")
+p2 <- top10 %>% filter(cluster=="Acinar-i")
+p2
 # A tibble: 10 × 7
 #   p_val avg_log2FC pct.1 pct.2 p_val_adj cluster  gene        
 #   <dbl>      <dbl> <dbl> <dbl>     <dbl> <fct>    <chr>       
@@ -452,6 +443,37 @@ top10 %>% filter(cluster=="Acinar-i")
 # 8     0       1.80 0.295 0.159         0 Acinar-i ANKRD62     
 # 9     0       1.78 0.28  0.144         0 Acinar-i RP4-765H13.1
 # 10    0       1.76 0.197 0.119         0 Acinar-i AC011306.2  
+
+# Select relevant columns for table in plot
+p2_display <- p2 %>%
+  dplyr::select(gene, avg_log2FC, pct.1, pct.2) %>%
+  dplyr::rename(
+    "Gene" = gene,
+    "avg_log2FC" = avg_log2FC,
+    "prop_acinar-i" = pct.1,
+    "prop_other" = pct.2)
+
+# Create a ggtexttable
+p2_table <- ggtexttable(
+  p2_display,
+  rows = NULL,
+  theme = ttheme("minimal", base_size = 9)) + 
+  ggtitle("Top 10 markers for Acinar-i") +
+  theme(plot.title = element_text(size = 10, face = "bold"))
+
+# create dimplots for all samples combined, incl. top markers for acinar-i cells
+pal_col <- colorRampPalette(brewer.pal(3,"Blues"))
+col_list <- c(pal_col(length(unique(ap@meta.data$Cluster)[!unique(ap@meta.data$Cluster) %in% "Acinar-i"])), "darkred")
+names(col_list) <- c(unique(as.character(ap@meta.data$Cluster))[!unique(ap@meta.data$Cluster) %in% "Acinar-i"], "Acinar-i")
+p1 <- DimPlot(ap, group.by="Cluster", label=T,label.size=2, repel=T, cols=col_list)+ NoLegend() + ggtitle("Cell Type: Acinar-i darkred, other in blue colors") + theme(plot.title = element_text(size = 10, face = "bold"))
+p1[[1]]$layers[[1]]$aes_params$alpha <-  ifelse(ap@meta.data$Acinar_i == "TRUE", 1, .8)
+p3 <- FeaturePlot(ap, features = "Acinar_Marker_Score1")+ ggtitle("MarkerScore") + theme(plot.title = element_text(size = 10, face = "bold")) &
+  scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred")) 
+p4 <- FeaturePlot(ap, features = c("Acinar_Journal_Marker_Score1"))+ ggtitle("JournalScore") + theme(plot.title = element_text(size = 10, face = "bold")) &
+  scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred")) 
+p_patched<-  wrap_plots(p1, p2_table, p3, p4, ncol = 2) + plot_annotation(title= paste0("UMAP Acinar-i cells, top expression, and marker expression in all adult pancreas samples")) & theme(plot.title = element_text(size = 11, face = "bold", hjust=0.5))
+ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_umap.png"), plot = p_patched, width = 22, height =20, units = "cm")
+
 
 top10 %>% filter(cluster=="Acinar-s")
 # A tibble: 10 × 7
@@ -483,34 +505,45 @@ top10 %>% filter(cluster=="Acinar-REG+")
 # 9     0       2.02 0.273 0.07          0 Acinar-REG+ EEF1A1
 # 10    0       2.01 0.195 0.049         0 Acinar-REG+ RPL13A
 
-sessionInfo()
+sessionInfo()     
 # R version 4.4.3 (2025-02-28)
 # Platform: x86_64-conda-linux-gnu
 # Running under: Ubuntu 24.04.1 LTS
 # 
 # Matrix products: default
-# BLAS/LAPACK: /data/cephfs-1/work/groups/krieger/users/spiese_c/miniconda/envs/pdac/lib/libopenblasp-r0.3.29.so;  LAPACK version 3.12.0
+# BLAS/LAPACK: /miniconda_dir/miniconda/envs/pdac/lib/libopenblasp-r0.3.29.so;  LAPACK version 3.12.0
 # 
 # locale:
-#   [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C               LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
-# [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8    LC_PAPER=en_US.UTF-8       LC_NAME=C                 
-# [9] LC_ADDRESS=C               LC_TELEPHONE=C             LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+#   [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C               LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8     LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8    LC_PAPER=en_US.UTF-8      
+# [8] LC_NAME=C                  LC_ADDRESS=C               LC_TELEPHONE=C             LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
 # 
 # time zone: Etc/UTC
 # tzcode source: system (glibc)
 # 
 # attached base packages:
-#   [1] grid      stats     graphics  grDevices utils     datasets  methods   base     
+#   [1] stats     graphics  grDevices utils     datasets  methods   base     
 # 
 # other attached packages:
-#   [1] rcompanion_2.5.0             Azimuth_0.5.0                shinyBS_0.61.1              
-# [4] rstatix_0.7.2                pROC_1.18.5                  viridis_0.6.5               
-# [7] viridisLite_0.4.2            harmony_1.2.3                Rcpp_1.0.14                 
-# [10] future_1.58.0                scIntegrationMetrics_1.2.0   ComplexHeatmap_2.22.0       
-# [13] RColorBrewer_1.1-3           readr_2.1.5                  msigdbr_24.1.0              
-# [16] readxl_1.4.5                 SeuratDisk_0.0.0.9021        ggplot2_3.5.2               
-# [19] pbmcsca.SeuratData_3.0.0     pancreasref.SeuratData_1.0.0 panc8.SeuratData_3.0.2      
-# [22] SeuratData_0.2.2.9001        patchwork_1.3.1              Seurat_5.0.0                
-# [25] SeuratObject_5.1.0           sp_2.2-0                     dplyr_1.1.4                 
-# [28] Matrix_1.7-3                
-
+#   [1] rstatix_0.7.2                pROC_1.18.5                  ggtext_0.1.2                 tidytext_0.4.3               metafor_4.8-0                numDeriv_2016.8-1.1         
+# [7] metadat_1.4-0                ggpubr_0.6.1                 viridis_0.6.5                viridisLite_0.4.2            SeuratDisk_0.0.0.9021        pbmcsca.SeuratData_3.0.0    
+# [13] pancreasref.SeuratData_1.0.0 panc8.SeuratData_3.0.2       SeuratData_0.2.2.9001        Matrix_1.7-3                 Seurat_5.0.0                 SeuratObject_5.1.0          
+# [19] sp_2.2-0                     ggrepel_0.9.6                ggalluvial_0.12.5            patchwork_1.3.1              ggplot2_3.5.2                RColorBrewer_1.1-3          
+# [25] dplyr_1.1.4                 
+# 
+# loaded via a namespace (and not attached):
+#   [1] mathjaxr_1.8-0         rstudioapi_0.17.1      jsonlite_2.0.0         magrittr_2.0.3         spatstat.utils_3.1-4   farver_2.1.2           ragg_1.4.0             vctrs_0.6.5           
+# [9] ROCR_1.0-11            spatstat.explore_3.4-3 htmltools_0.5.8.1      broom_1.0.8            janeaustenr_1.0.0      Formula_1.2-5          sctransform_0.4.2      parallelly_1.45.0     
+# [17] KernSmooth_2.23-26     tokenizers_0.3.0       htmlwidgets_1.6.4      ica_1.0-3              plyr_1.8.9             plotly_4.11.0          zoo_1.8-14             igraph_2.1.4          
+# [25] mime_0.13              lifecycle_1.0.4        pkgconfig_2.0.3        R6_2.6.1               fastmap_1.2.0          fitdistrplus_1.2-3     future_1.58.0          shiny_1.11.0          
+# [33] digest_0.6.37          tensor_1.5.1           RSpectra_0.16-2        irlba_2.3.5.1          SnowballC_0.7.1        textshaping_1.0.1      labeling_0.4.3         progressr_0.15.1      
+# [41] spatstat.sparse_3.1-0  httr_1.4.7             polyclip_1.10-7        abind_1.4-8            compiler_4.4.3         bit64_4.6.0-1          withr_3.0.2            backports_1.5.0       
+# [49] carData_3.0-5          fastDummies_1.7.5      ggsignif_0.6.4         MASS_7.3-65            rappdirs_0.3.3         tools_4.4.3            lmtest_0.9-40          httpuv_1.6.16         
+# [57] future.apply_1.20.0    goftest_1.2-3          glue_1.8.0             nlme_3.1-168           promises_1.3.3         gridtext_0.1.5         grid_4.4.3             Rtsne_0.17            
+# [65] cluster_2.1.8.1        reshape2_1.4.4         generics_0.1.4         hdf5r_1.3.12           gtable_0.3.6           spatstat.data_3.1-6    tidyr_1.3.1            data.table_1.17.6     
+# [73] xml2_1.3.8             car_3.1-3              utf8_1.2.6             spatstat.geom_3.4-1    RcppAnnoy_0.0.22       RANN_2.6.2             pillar_1.10.2          stringr_1.5.1         
+# [81] spam_2.11-1            RcppHNSW_0.6.0         limma_3.62.2           later_1.4.2            splines_4.4.3          lattice_0.22-7         survival_3.8-3         bit_4.6.0             
+# [89] deldir_2.0-4           tidyselect_1.2.1       miniUI_0.1.2           pbapply_1.7-2          gridExtra_2.3          scattermore_1.2        statmod_1.5.0          matrixStats_1.5.0     
+# [97] stringi_1.8.7          lazyeval_0.2.2         codetools_0.2-20       tibble_3.3.0           cli_3.6.5              uwot_0.2.3             xtable_1.8-4           reticulate_1.42.0     
+# [105] systemfonts_1.3.1      dichromat_2.0-0.1      Rcpp_1.0.14            globals_0.18.0         spatstat.random_3.4-1  png_0.1-8              spatstat.univar_3.1-3  parallel_4.4.3        
+# [113] presto_1.0.0           dotCall64_1.2          listenv_0.9.1          scales_1.4.0           ggridges_0.5.6         leiden_0.4.3.1         purrr_1.0.4            crayon_1.5.3          
+# [121] rlang_1.1.6            cowplot_1.1.3       
