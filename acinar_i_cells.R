@@ -457,23 +457,23 @@ p2_display <- p2 %>%
 p2_table <- ggtexttable(
   p2_display,
   rows = NULL,
-  theme = ttheme("minimal", base_size = 9)) + 
+  theme = ttheme("minimal", base_size = 12)) + 
   ggtitle("Top 10 markers for Acinar-i") +
-  theme(plot.title = element_text(size = 10, face = "bold"))
+  theme(plot.title = element_text(size = 12, face = "bold"))
 
 # create dimplots for all samples combined, incl. top markers for acinar-i cells
 pal_col <- colorRampPalette(brewer.pal(3,"Blues"))
 col_list <- c(pal_col(length(unique(ap@meta.data$Cluster)[!unique(ap@meta.data$Cluster) %in% "Acinar-i"])), "darkred")
 names(col_list) <- c(unique(as.character(ap@meta.data$Cluster))[!unique(ap@meta.data$Cluster) %in% "Acinar-i"], "Acinar-i")
-p1 <- DimPlot(ap, group.by="Cluster", label=T,label.size=2, repel=T, cols=col_list)+ NoLegend() + ggtitle("Cell Type: Acinar-i darkred, other in blue colors") + theme(plot.title = element_text(size = 10, face = "bold"))
+p1 <- DimPlot(ap, group.by="Cluster", label=T,label.size=3, repel=T, cols=col_list)+ NoLegend() + ggtitle("Cell Type: Acinar-i darkred, other in blue colors") + theme(plot.title = element_text(size = 10, face = "bold"))
 p1[[1]]$layers[[1]]$aes_params$alpha <-  ifelse(ap@meta.data$Acinar_i == "TRUE", 1, .8)
-p3 <- FeaturePlot(ap, features = "Acinar_Marker_Score1")+ ggtitle("MarkerScore") + theme(plot.title = element_text(size = 10, face = "bold")) &
+p3 <- FeaturePlot(ap, features = "Acinar_Marker_Score1")+ ggtitle("MarkerScore") + theme(plot.title = element_text(size = 11, face = "bold"), legend.text = element_text(face = "bold")) &
   scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred")) 
-p4 <- FeaturePlot(ap, features = c("Acinar_Journal_Marker_Score1"))+ ggtitle("JournalScore") + theme(plot.title = element_text(size = 10, face = "bold")) &
+p4 <- FeaturePlot(ap, features = c("Acinar_Journal_Marker_Score1"))+ ggtitle("JournalScore") + theme(plot.title = element_text(size = 11, face = "bold"), legend.text = element_text(face = "bold")) &
   scale_color_gradientn(colours = c("gray", "lightblue","pink", "red", "darkred")) 
-p_patched<-  wrap_plots(p1, p2_table, p3, p4, ncol = 2) + plot_annotation(title= paste0("UMAP Acinar-i cells, top expression, and marker expression in all adult pancreas samples")) & theme(plot.title = element_text(size = 11, face = "bold", hjust=0.5))
-ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_umap.png"), plot = p_patched, width = 22, height =20, units = "cm")
-
+p_patched<-  wrap_plots(p1, p2_table, p3, p4, ncol = 2) + plot_annotation(title= paste0("UMAP Acinar-i cells, top expression, and marker expression in all adult pancreas samples")) & theme(plot.title = element_text(size = 13, face = "bold", hjust=0.5))
+ggsave(paste0(egas_dir, "plots/all_AP_acinar_cells_umap.png"), plot = p_patched, width = 26, height =23, units = "cm")
+      
 
 top10 %>% filter(cluster=="Acinar-s")
 # A tibble: 10 × 7
@@ -547,3 +547,4 @@ sessionInfo()
 # [105] systemfonts_1.3.1      dichromat_2.0-0.1      Rcpp_1.0.14            globals_0.18.0         spatstat.random_3.4-1  png_0.1-8              spatstat.univar_3.1-3  parallel_4.4.3        
 # [113] presto_1.0.0           dotCall64_1.2          listenv_0.9.1          scales_1.4.0           ggridges_0.5.6         leiden_0.4.3.1         purrr_1.0.4            crayon_1.5.3          
 # [121] rlang_1.1.6            cowplot_1.1.3       
+
